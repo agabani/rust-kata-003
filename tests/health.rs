@@ -1,4 +1,5 @@
 use rust_kata_003::startup::run;
+use sqlx::postgres::PgPoolOptions;
 use std::net::TcpListener;
 
 #[actix_rt::test]
@@ -34,11 +35,22 @@ struct TestApp {
 }
 
 async fn spawn_app() -> TestApp {
+    let postgres_pool = PgPoolOptions::new()
+        .connect_timeout(std::time::Duration::from_secs(1))
+        .connect_lazy("postgres://postgres:password@127.0.0.1")
+        .expect("Failed to connect to postgres.");
+
+    let redis_pool = redis::Client::open("redis://127.0.0.1/")
+        .expect("Failed to create redis client.")
+        .get_tokio_connection_manager()
+        .await
+        .expect("Failed to connect to redis.");
+
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
     let address = format!("http://127.0.0.1:{}", port);
 
-    let server = run(listener).expect("Failed to bind address.");
+    let server = run(listener, postgres_pool, redis_pool).expect("Failed to bind address.");
     let _ = tokio::spawn(server);
     TestApp { address }
 }
