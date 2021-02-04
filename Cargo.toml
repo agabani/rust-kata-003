@@ -13,8 +13,10 @@ path = "src/main.rs"
 
 [dependencies]
 actix-web = "4.0.0-beta.1"
+config = "0.10.1"
 redis = { version = "0.19.0", features = [ "connection-manager", "tokio-comp" ] }
 reqwest = "0.11.0"
+serde = "1.0.123"
 sqlx = { git = "https://github.com/launchbadge/sqlx.git", branch = "master", features = [ "macros", "migrate", "offline", "postgres", "runtime-actix-rustls" ] }
 
 [dev-dependencies]

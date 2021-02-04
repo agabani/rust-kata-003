@@ -1,0 +1,6 @@
+http_server:
+  host: 0.0.0.0
+postgres:
+  require_ssl: true
+redis:
+  ssl: true

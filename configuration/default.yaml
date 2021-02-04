@@ -1,0 +1,6 @@
+http_server:
+  port: 8080
+postgres:
+  port: 5432
+redis:
+  port: 6379
