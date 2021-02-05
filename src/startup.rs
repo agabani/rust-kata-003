@@ -6,11 +6,21 @@ use actix_web::{web, App, HttpServer};
 pub async fn run() -> (Server, u16) {
     let configuration = Configuration::load().expect("Failed to read configuration.");
 
-    let listener = configuration.http_server.tcp_listener();
-    let postgres_pool = web::Data::new(configuration.postgres.server_pool());
-    let redis_pool = web::Data::new(configuration.redis.connection_manager().await);
-
+    let listener = configuration
+        .http_server
+        .tcp_listener()
+        .expect("Failed to bind port.");
     let port = listener.local_addr().unwrap().port();
+
+    let postgres_pool = configuration.postgres.server_pool();
+    let postgres_pool = web::Data::new(postgres_pool);
+
+    let redis_pool = configuration
+        .redis
+        .connection_manager()
+        .await
+        .expect("Failed to connect to redis.");
+    let redis_pool = web::Data::new(redis_pool);
 
     let server = HttpServer::new(move || {
         App::new()

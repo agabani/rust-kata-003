@@ -1,6 +1,6 @@
 use config::{Config, File};
 use redis::aio::ConnectionManager;
-use redis::{ConnectionAddr, ConnectionInfo};
+use redis::{ConnectionAddr, ConnectionInfo, RedisResult};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgSslMode};
 use sqlx::{Pool, Postgres};
 use std::convert::{TryFrom, TryInto};
@@ -42,8 +42,8 @@ pub struct HttpServerConfiguration {
 }
 
 impl HttpServerConfiguration {
-    pub fn tcp_listener(&self) -> TcpListener {
-        TcpListener::bind(format!("{}:{}", self.host, self.port)).expect("Failed to bind port.")
+    pub fn tcp_listener(&self) -> std::io::Result<TcpListener> {
+        TcpListener::bind(format!("{}:{}", self.host, self.port))
     }
 }
 
@@ -96,7 +96,7 @@ pub struct RedisConfiguration {
 }
 
 impl RedisConfiguration {
-    pub async fn connection_manager(&self) -> ConnectionManager {
+    pub async fn connection_manager(&self) -> RedisResult<ConnectionManager> {
         redis::Client::open(ConnectionInfo {
             username: self.username.to_owned(),
             passwd: self.password.to_owned(),
@@ -109,11 +109,9 @@ impl RedisConfiguration {
                 false => ConnectionAddr::Tcp(self.host.to_owned(), self.port),
             }),
             db: self.database,
-        })
-        .expect("Failed to create redis client.")
+        })?
         .get_tokio_connection_manager()
         .await
-        .expect("Failed to connect to redis.")
     }
 }
 
