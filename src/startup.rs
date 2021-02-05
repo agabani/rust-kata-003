@@ -1,30 +1,7 @@
 use crate::configuration::Configuration;
+use crate::routes::{health_liveness, health_readiness};
 use actix_web::dev::Server;
-use actix_web::{web, App, HttpResponse, HttpServer};
-use redis::aio::ConnectionManager;
-use sqlx::{Pool, Postgres};
-
-async fn health_liveness() -> HttpResponse {
-    HttpResponse::Ok().finish()
-}
-
-async fn health_readiness(
-    postgres_pool: web::Data<Pool<Postgres>>,
-    redis_pool: web::Data<ConnectionManager>,
-) -> Result<HttpResponse, HttpResponse> {
-    let _: (i64,) = sqlx::query_as("SELECT $1")
-        .bind(150_i64)
-        .fetch_one(postgres_pool.get_ref())
-        .await
-        .map_err(|_| HttpResponse::InternalServerError().finish())?;
-
-    let _: () = redis::cmd("PING")
-        .query_async(&mut redis_pool.get_ref().clone())
-        .await
-        .map_err(|_| HttpResponse::InternalServerError().finish())?;
-
-    Ok(HttpResponse::Ok().finish())
-}
+use actix_web::{web, App, HttpServer};
 
 pub async fn run() -> (Server, u16) {
     let configuration = Configuration::load().expect("Failed to read configuration.");
