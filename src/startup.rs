@@ -1,8 +1,8 @@
+use crate::configuration::Configuration;
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpResponse, HttpServer};
 use redis::aio::ConnectionManager;
 use sqlx::{Pool, Postgres};
-use std::net::TcpListener;
 
 async fn health_liveness() -> HttpResponse {
     HttpResponse::Ok().finish()
@@ -26,13 +26,14 @@ async fn health_readiness(
     Ok(HttpResponse::Ok().finish())
 }
 
-pub fn run(
-    listener: TcpListener,
-    postgres_pool: Pool<Postgres>,
-    redis_pool: ConnectionManager,
-) -> Result<Server, std::io::Error> {
-    let postgres_pool = web::Data::new(postgres_pool);
-    let redis_pool = web::Data::new(redis_pool);
+pub async fn run() -> (Server, u16) {
+    let configuration = Configuration::load().expect("Failed to read configuration.");
+
+    let listener = configuration.http_server.tcp_listener();
+    let postgres_pool = web::Data::new(configuration.postgres.server_pool());
+    let redis_pool = web::Data::new(configuration.redis.connection_manager().await);
+
+    let port = listener.local_addr().unwrap().port();
 
     let server = HttpServer::new(move || {
         App::new()
@@ -44,7 +45,9 @@ pub fn run(
             .app_data(postgres_pool.clone())
             .app_data(redis_pool.clone())
     })
-    .listen(listener)?
+    .listen(listener)
+    .expect("Failed to bind address.")
     .run();
-    Ok(server)
+
+    (server, port)
 }
