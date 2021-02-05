@@ -21,4 +21,5 @@ sqlx = { git = "https://github.com/launchbadge/sqlx.git", branch = "master", fea
 
 [dev-dependencies]
 actix-rt = "=2.0.0-beta.2"
+fake = "2.4.0"
 tokio = { version = "1.1.1", features = ["rt", "net"] }

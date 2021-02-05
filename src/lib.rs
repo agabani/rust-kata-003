@@ -1,2 +1,5 @@
-pub mod configuration;
-pub mod startup;
+mod configuration;
+mod routes;
+mod startup;
+
+pub use startup::run;
