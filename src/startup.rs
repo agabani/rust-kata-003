@@ -1,5 +1,5 @@
 use crate::configuration::Configuration;
-use crate::routes::{health_liveness, health_readiness};
+use crate::routes::{dependency_query, health_liveness, health_readiness};
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 
@@ -29,6 +29,7 @@ pub async fn run() -> (Server, u16) {
                     .route("/liveness", web::get().to(health_liveness))
                     .route("/readiness", web::get().to(health_readiness)),
             )
+            .service(web::scope("/dependency").route("", web::get().to(dependency_query)))
             .app_data(postgres_pool.clone())
             .app_data(redis_pool.clone())
     })

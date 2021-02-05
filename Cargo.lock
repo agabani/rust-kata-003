@@ -643,6 +643,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fake"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "704749d52f737f28d7a632d4608db4005822efbb5a1c673c159f1193c9e63832"
+dependencies = [
+ "rand 0.8.3",
+]
+
+[[package]]
 name = "flate2"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1668,6 +1677,7 @@ dependencies = [
  "actix-rt",
  "actix-web",
  "config",
+ "fake",
  "redis",
  "reqwest",
  "serde 1.0.123",
