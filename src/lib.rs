@@ -1,2 +1,4 @@
-pub mod configuration;
-pub mod startup;
+mod configuration;
+mod startup;
+
+pub use startup::run;
