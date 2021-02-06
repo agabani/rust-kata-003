@@ -15,6 +15,7 @@ pub struct Configuration {
 }
 
 impl Configuration {
+    #[tracing::instrument]
     pub fn load() -> Result<Configuration, config::ConfigError> {
         let configuration_directory = env::current_dir()
             .expect("Failed to determine current directory.")
@@ -27,9 +28,21 @@ impl Configuration {
 
         let mut config = Config::default();
         config
-            .merge(File::from(configuration_directory.join("default")).required(true))?
-            .merge(File::from(configuration_directory.join(environment.as_str())).required(true))?
-            .merge(config::Environment::with_prefix("APP").separator("__"))?;
+            .merge(File::from(configuration_directory.join("default")).required(true))
+            .map_err(|error| {
+                tracing::error!(%error);
+                error
+            })?
+            .merge(File::from(configuration_directory.join(environment.as_str())).required(true))
+            .map_err(|error| {
+                tracing::error!(%error);
+                error
+            })?
+            .merge(config::Environment::with_prefix("APP").separator("__"))
+            .map_err(|error| {
+                tracing::error!(%error);
+                error
+            })?;
 
         config.try_into()
     }
@@ -42,8 +55,12 @@ pub struct HttpServerConfiguration {
 }
 
 impl HttpServerConfiguration {
+    #[tracing::instrument(skip(self))]
     pub fn tcp_listener(&self) -> std::io::Result<TcpListener> {
-        TcpListener::bind(format!("{}:{}", self.host, self.port))
+        TcpListener::bind(format!("{}:{}", self.host, self.port)).map_err(|error| {
+            tracing::error!(%error);
+            error
+        })
     }
 }
 
@@ -96,6 +113,7 @@ pub struct RedisConfiguration {
 }
 
 impl RedisConfiguration {
+    #[tracing::instrument(skip(self))]
     pub async fn connection_manager(&self) -> RedisResult<ConnectionManager> {
         redis::Client::open(ConnectionInfo {
             username: self.username.to_owned(),
@@ -109,9 +127,17 @@ impl RedisConfiguration {
                 false => ConnectionAddr::Tcp(self.host.to_owned(), self.port),
             }),
             db: self.database,
+        })
+        .map_err(|error| {
+            tracing::error!(%error);
+            error
         })?
         .get_tokio_connection_manager()
         .await
+        .map_err(|error| {
+            tracing::error!(%error);
+            error
+        })
     }
 }
 

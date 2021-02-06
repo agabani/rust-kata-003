@@ -1739,7 +1739,6 @@ dependencies = [
  "tracing",
  "tracing-actix-web",
  "tracing-futures",
- "tracing-log",
  "tracing-subscriber",
 ]
 
