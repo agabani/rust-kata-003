@@ -1,4 +1,5 @@
 use crate::configuration::Configuration;
+use crate::crates_io_client::CratesIoClient;
 use crate::routes::{dependency_query, health_liveness, health_readiness};
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
@@ -23,6 +24,9 @@ pub async fn run() -> (Server, u16) {
         .expect("Failed to connect to redis.");
     let redis_pool = web::Data::new(redis_pool);
 
+    let crates_io_client = CratesIoClient {};
+    let crates_io_client = web::Data::new(crates_io_client);
+
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger)
@@ -32,6 +36,7 @@ pub async fn run() -> (Server, u16) {
                     .route("/readiness", web::get().to(health_readiness)),
             )
             .service(web::scope("/dependency").route("", web::get().to(dependency_query)))
+            .app_data(crates_io_client.clone())
             .app_data(postgres_pool.clone())
             .app_data(redis_pool.clone())
     })
