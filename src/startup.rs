@@ -2,6 +2,7 @@ use crate::configuration::Configuration;
 use crate::routes::{dependency_query, health_liveness, health_readiness};
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
+use tracing_actix_web::TracingLogger;
 
 pub async fn run() -> (Server, u16) {
     let configuration = Configuration::load().expect("Failed to read configuration.");
@@ -24,6 +25,7 @@ pub async fn run() -> (Server, u16) {
 
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(TracingLogger)
             .service(
                 web::scope("/health")
                     .route("/liveness", web::get().to(health_liveness))
