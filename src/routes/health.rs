@@ -1,3 +1,4 @@
+use crate::telemetry::TraceErrorExt;
 use actix_web::{web, HttpResponse};
 use redis::aio::ConnectionManager;
 use sqlx::{Pool, Postgres};
@@ -27,10 +28,7 @@ async fn postgres(pool: &Pool<Postgres>) -> Result<(), sqlx::Error> {
         .bind(150_i64)
         .fetch_one(pool)
         .await
-        .map_err(|error| {
-            tracing::error!(%error);
-            error
-        })?;
+        .trace_err()?;
     Ok(())
 }
 
@@ -39,9 +37,6 @@ async fn redis(pool: &ConnectionManager) -> Result<(), redis::RedisError> {
     let _: () = redis::cmd("PING")
         .query_async(&mut pool.clone())
         .await
-        .map_err(|error| {
-            tracing::error!(%error);
-            error
-        })?;
+        .trace_err()?;
     Ok(())
 }

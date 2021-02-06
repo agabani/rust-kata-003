@@ -1,4 +1,4 @@
-use tracing::{subscriber, Subscriber};
+use tracing::Subscriber;
 use tracing_subscriber::fmt::time::ChronoUtc;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, EnvFilter, Registry};
@@ -16,8 +16,4 @@ pub fn configure(level: &str) -> impl Subscriber + Send + Sync {
         .json();
 
     Registry::default().with(filter_layer).with(fmt_layer)
-}
-
-pub fn init(subscriber: impl Subscriber + Send + Sync) {
-    subscriber::set_global_default(subscriber).expect("setting tracing default failed.");
 }
