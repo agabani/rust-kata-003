@@ -3,12 +3,12 @@ use actix_web::{web, HttpResponse};
 pub mod view_models {
     use serde::{Deserialize, Serialize};
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     pub struct Query {
         #[serde(rename = "name")]
-        pub name: String,
+        pub crate_name: String,
         #[serde(rename = "version")]
-        pub version: String,
+        pub crate_version: String,
     }
 
     #[derive(Serialize)]
@@ -44,11 +44,19 @@ pub mod view_models {
     }
 }
 
-pub async fn dependency_query(web::Query(query): web::Query<view_models::Query>) -> HttpResponse {
+#[tracing::instrument(
+    name = "Querying dependency",
+    skip(query),
+    fields(
+        crate_name = %query.crate_name,
+        crate_version = %query.crate_version,
+    ),
+)]
+pub fn dependency_query(web::Query(query): web::Query<view_models::Query>) -> HttpResponse {
     HttpResponse::Ok().json(view_models::Result {
         data: vec![view_models::Node {
-            name: query.name,
-            version: query.version,
+            name: query.crate_name,
+            version: query.crate_version,
             edges: vec![],
         }],
     })
