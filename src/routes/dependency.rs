@@ -1,3 +1,5 @@
+use crate::crates_io_client::CratesIoClient;
+use crate::domain::{CrateName, CrateVersion};
 use actix_web::{web, HttpResponse};
 
 pub mod view_models {
@@ -45,19 +47,26 @@ pub mod view_models {
 }
 
 #[tracing::instrument(
-    name = "Querying dependency",
-    skip(query),
+    skip(client, query),
     fields(
         crate_name = %query.crate_name,
         crate_version = %query.crate_version,
     ),
 )]
-pub fn dependency_query(web::Query(query): web::Query<view_models::Query>) -> HttpResponse {
-    HttpResponse::Ok().json(view_models::Result {
+pub async fn dependency_query(
+    web::Query(query): web::Query<view_models::Query>,
+    client: web::Data<CratesIoClient>,
+) -> Result<HttpResponse, HttpResponse> {
+    let name = CrateName::parse(&query.crate_name)?;
+    let version = CrateVersion::parse(&query.crate_version)?;
+
+    let metadata = client.get_ref().query(name, version).await;
+
+    Ok(HttpResponse::Ok().json(view_models::Result {
         data: vec![view_models::Node {
-            name: query.crate_name,
-            version: query.crate_version,
+            name: metadata.name.as_str().to_owned(),
+            version: metadata.version.as_str().to_owned(),
             edges: vec![],
         }],
-    })
+    }))
 }
