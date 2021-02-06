@@ -1,3 +1,6 @@
+crates_io:
+  base_address: https://crates.io
+  user_agent: rust-kata-003 (https://github.com/agabani/rust-kata-003)
 http_server:
   port: 8080
 postgres:

@@ -1,12 +1,11 @@
 use crate::configuration::Configuration;
-use crate::crates_io_client::CratesIoClient;
 use crate::routes::{dependency_query, health_liveness, health_readiness};
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use tracing_actix_web::TracingLogger;
 
-pub async fn run() -> (Server, u16) {
-    let configuration = Configuration::load().expect("Failed to read configuration.");
+pub async fn run(overrides: &[(&str, &str)]) -> (Server, u16) {
+    let configuration = Configuration::load(overrides).expect("Failed to read configuration.");
 
     let listener = configuration
         .http_server
@@ -24,7 +23,10 @@ pub async fn run() -> (Server, u16) {
         .expect("Failed to connect to redis.");
     let redis_pool = web::Data::new(redis_pool);
 
-    let crates_io_client = CratesIoClient {};
+    let crates_io_client = configuration
+        .crates_io
+        .client()
+        .expect("Failed to create client.");
     let crates_io_client = web::Data::new(crates_io_client);
 
     let server = HttpServer::new(move || {

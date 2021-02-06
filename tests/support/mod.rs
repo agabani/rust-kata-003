@@ -10,11 +10,12 @@ pub struct TestApp {
     pub address: String,
 }
 
-pub async fn spawn_app() -> TestApp {
-    std::env::set_var("app_http_server__port", "0");
+pub async fn spawn_app(overrides: &[(&str, &str)]) -> TestApp {
     lazy_static::initialize(&TRACING);
 
-    let (server, port) = rust_kata_003::run().await;
+    let defaults = &[("http_server.port", "0")];
+
+    let (server, port) = rust_kata_003::run(&[defaults, overrides].concat()).await;
     let _ = tokio::spawn(server);
 
     TestApp {
