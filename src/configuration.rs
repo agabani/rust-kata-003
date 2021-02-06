@@ -1,3 +1,4 @@
+use crate::telemetry::TraceErrorExt;
 use config::{Config, File};
 use redis::aio::ConnectionManager;
 use redis::{ConnectionAddr, ConnectionInfo, RedisResult};
@@ -29,20 +30,11 @@ impl Configuration {
         let mut config = Config::default();
         config
             .merge(File::from(configuration_directory.join("default")).required(true))
-            .map_err(|error| {
-                tracing::error!(%error);
-                error
-            })?
+            .trace_err()?
             .merge(File::from(configuration_directory.join(environment.as_str())).required(true))
-            .map_err(|error| {
-                tracing::error!(%error);
-                error
-            })?
+            .trace_err()?
             .merge(config::Environment::with_prefix("APP").separator("__"))
-            .map_err(|error| {
-                tracing::error!(%error);
-                error
-            })?;
+            .trace_err()?;
 
         config.try_into()
     }
@@ -57,10 +49,7 @@ pub struct HttpServerConfiguration {
 impl HttpServerConfiguration {
     #[tracing::instrument(skip(self))]
     pub fn tcp_listener(&self) -> std::io::Result<TcpListener> {
-        TcpListener::bind(format!("{}:{}", self.host, self.port)).map_err(|error| {
-            tracing::error!(%error);
-            error
-        })
+        TcpListener::bind(format!("{}:{}", self.host, self.port)).trace_err()
     }
 }
 
@@ -128,16 +117,10 @@ impl RedisConfiguration {
             }),
             db: self.database,
         })
-        .map_err(|error| {
-            tracing::error!(%error);
-            error
-        })?
+        .trace_err()?
         .get_tokio_connection_manager()
         .await
-        .map_err(|error| {
-            tracing::error!(%error);
-            error
-        })
+        .trace_err()
     }
 }
 
