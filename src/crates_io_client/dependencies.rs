@@ -1,5 +1,6 @@
 use crate::crates_io_client::CratesIoClient;
-use crate::domain::{CrateMetadata, CrateName, CrateVersion};
+use crate::domain::{CrateMetadata, CrateName, CrateRelationship, CrateVersion};
+use std::convert::TryFrom;
 
 #[derive(Debug, serde::Deserialize)]
 struct Response {
@@ -34,8 +35,8 @@ struct DependencyResponse {
 impl CratesIoClient {
     pub async fn dependencies(
         &self,
-        name: CrateName,
-        version: CrateVersion,
+        name: &CrateName,
+        version: &CrateVersion,
     ) -> Option<Vec<CrateMetadata>> {
         let url = format!(
             "/api/v1/crates/{}/{}/dependencies",
@@ -51,6 +52,8 @@ impl CratesIoClient {
             .map(|d| CrateMetadata {
                 name: CrateName::parse(&d.crate_id).expect("Failed to parse name."),
                 version: CrateVersion::parse(&d.req).expect("Failed to parse version."),
+                relationship: CrateRelationship::try_from(d.kind.as_str())
+                    .expect("Failed to parse relationship."),
             })
             .collect();
 
@@ -87,8 +90,8 @@ mod tests {
         // Act
         let result = client
             .dependencies(
-                CrateName::parse("proc-macro2").unwrap(),
-                CrateVersion::parse("1.0.24").unwrap(),
+                &CrateName::parse("proc-macro2").unwrap(),
+                &CrateVersion::parse("1.0.24").unwrap(),
             )
             .await
             .unwrap();
@@ -97,8 +100,10 @@ mod tests {
         assert_eq!(2, result.len());
         assert_eq!(&"quote", &result[0].name.as_str());
         assert_eq!(&"^1.0", &result[0].version.as_str());
+        assert_eq!(&"dev", &result[0].relationship.as_str());
         assert_eq!(&"unicode-xid", &result[1].name.as_str());
         assert_eq!(&"^0.2", &result[1].version.as_str());
+        assert_eq!(&"normal", &result[1].relationship.as_str());
     }
 
     #[actix_rt::test]
@@ -116,8 +121,8 @@ mod tests {
         // Act
         let result = client
             .dependencies(
-                CrateName::parse(&Faker.fake::<String>()).unwrap(),
-                CrateVersion::parse(&Faker.fake::<String>()).unwrap(),
+                &CrateName::parse(&Faker.fake::<String>()).unwrap(),
+                &CrateVersion::parse(&Faker.fake::<String>()).unwrap(),
             )
             .await;
 
