@@ -1,49 +1,46 @@
 use crate::crates_io_client::CratesIoClient;
 use crate::domain::{CrateName, CrateVersion};
 use actix_web::{web, HttpResponse};
+use serde::{Deserialize, Serialize};
 
-pub mod view_models {
-    use serde::{Deserialize, Serialize};
+#[derive(Debug, Deserialize)]
+pub struct Query {
+    #[serde(rename = "name")]
+    pub crate_name: String,
+    #[serde(rename = "version")]
+    pub crate_version: String,
+}
 
-    #[derive(Debug, Deserialize)]
-    pub struct Query {
-        #[serde(rename = "name")]
-        pub crate_name: String,
-        #[serde(rename = "version")]
-        pub crate_version: String,
-    }
+#[derive(Serialize)]
+pub struct Response {
+    #[serde(rename = "data")]
+    pub data: Vec<Node>,
+}
 
-    #[derive(Serialize)]
-    pub struct Result {
-        #[serde(rename = "data")]
-        pub data: Vec<Node>,
-    }
+#[derive(Serialize)]
+pub struct Node {
+    #[serde(rename = "name")]
+    pub name: String,
+    #[serde(rename = "version")]
+    pub version: String,
+    #[serde(rename = "edges")]
+    pub edges: Vec<Edge>,
+}
 
-    #[derive(Serialize)]
-    pub struct Node {
-        #[serde(rename = "name")]
-        pub name: String,
-        #[serde(rename = "version")]
-        pub version: String,
-        #[serde(rename = "edges")]
-        pub edges: Vec<Edge>,
-    }
+#[derive(Serialize)]
+pub struct Edge {
+    #[serde(rename = "relationship")]
+    pub relationship: String,
+    #[serde(rename = "node")]
+    pub node: RelatedNode,
+}
 
-    #[derive(Serialize)]
-    pub struct Edge {
-        #[serde(rename = "relationship")]
-        pub relationship: String,
-        #[serde(rename = "node")]
-        pub node: RelatedNode,
-    }
-
-    #[derive(Serialize)]
-    pub struct RelatedNode {
-        #[serde(rename = "name")]
-        pub name: String,
-        #[serde(rename = "version")]
-        pub version: String,
-    }
+#[derive(Serialize)]
+pub struct RelatedNode {
+    #[serde(rename = "name")]
+    pub name: String,
+    #[serde(rename = "version")]
+    pub version: String,
 }
 
 #[tracing::instrument(
@@ -54,7 +51,7 @@ pub mod view_models {
     ),
 )]
 pub async fn dependency_query(
-    web::Query(query): web::Query<view_models::Query>,
+    web::Query(query): web::Query<Query>,
     client: web::Data<CratesIoClient>,
 ) -> Result<HttpResponse, HttpResponse> {
     let name = CrateName::parse(&query.crate_name)?;
@@ -62,19 +59,25 @@ pub async fn dependency_query(
 
     let metadata = client
         .get_ref()
-        .dependencies(name, version)
+        .dependencies(&name, &version)
         .await
         .ok_or_else(|| HttpResponse::NotFound().finish())?;
 
-    let json = view_models::Result {
-        data: metadata
-            .iter()
-            .map(|meta| view_models::Node {
-                name: meta.name.as_str().to_owned(),
-                version: meta.version.as_str().to_owned(),
-                edges: vec![],
-            })
-            .collect(),
+    let json = Response {
+        data: vec![Node {
+            name: name.as_str().to_owned(),
+            version: version.as_str().to_owned(),
+            edges: metadata
+                .iter()
+                .map(|meta| Edge {
+                    relationship: meta.relationship.as_str().to_owned(),
+                    node: RelatedNode {
+                        name: meta.name.as_str().to_owned(),
+                        version: meta.version.as_str().to_owned(),
+                    },
+                })
+                .collect(),
+        }],
     };
 
     Ok(HttpResponse::Ok().json(json))

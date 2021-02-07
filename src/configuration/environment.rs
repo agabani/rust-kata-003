@@ -36,27 +36,27 @@ mod tests {
     use std::convert::TryFrom;
 
     #[test]
-    fn environment_as_str() {
-        assert_eq!(Environment::Local.as_str(), "local");
-        assert_eq!(Environment::Production.as_str(), "production");
+    fn as_str() {
+        assert_eq!("local", Environment::Local.as_str());
+        assert_eq!("production", Environment::Production.as_str());
     }
 
     #[test]
-    fn environment_try_from() {
+    fn try_from() {
         assert_eq!(
-            Environment::try_from("local".to_owned()),
-            Ok(Environment::Local)
+            Ok(Environment::Local),
+            Environment::try_from("local".to_owned())
         );
         assert_eq!(
-            Environment::try_from("production".to_owned()),
-            Ok(Environment::Production)
+            Ok(Environment::Production),
+            Environment::try_from("production".to_owned())
         );
         assert_eq!(
-            Environment::try_from("other".to_owned()),
             Err(
                 "other is not a supported environment. Use either `local` or `production`."
                     .to_owned()
-            )
+            ),
+            Environment::try_from("other".to_owned())
         );
     }
 }
