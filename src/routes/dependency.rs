@@ -60,13 +60,22 @@ pub async fn dependency_query(
     let name = CrateName::parse(&query.crate_name)?;
     let version = CrateVersion::parse(&query.crate_version)?;
 
-    let metadata = client.get_ref().query(name, version).await;
+    let metadata = client
+        .get_ref()
+        .dependencies(name, version)
+        .await
+        .ok_or_else(|| HttpResponse::NotFound().finish())?;
 
-    Ok(HttpResponse::Ok().json(view_models::Result {
-        data: vec![view_models::Node {
-            name: metadata.name.as_str().to_owned(),
-            version: metadata.version.as_str().to_owned(),
-            edges: vec![],
-        }],
-    }))
+    let json = view_models::Result {
+        data: metadata
+            .iter()
+            .map(|meta| view_models::Node {
+                name: meta.name.as_str().to_owned(),
+                version: meta.version.as_str().to_owned(),
+                edges: vec![],
+            })
+            .collect(),
+    };
+
+    Ok(HttpResponse::Ok().json(json))
 }

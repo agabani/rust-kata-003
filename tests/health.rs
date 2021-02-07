@@ -4,7 +4,7 @@ use crate::support::spawn_app;
 
 #[actix_rt::test]
 async fn health_check_liveness_works() {
-    let app = spawn_app().await;
+    let app = spawn_app(&[]).await;
     let client = reqwest::Client::new();
 
     let response = client
@@ -18,7 +18,7 @@ async fn health_check_liveness_works() {
 
 #[actix_rt::test]
 async fn health_check_readiness_works() {
-    let app = spawn_app().await;
+    let app = spawn_app(&[]).await;
     let client = reqwest::Client::new();
 
     let response = client

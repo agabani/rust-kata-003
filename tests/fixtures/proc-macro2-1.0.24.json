@@ -1,0 +1,28 @@
+{
+  "dependencies": [
+    {
+      "id": 1727340,
+      "version_id": 289225,
+      "crate_id": "quote",
+      "req": "^1.0",
+      "optional": false,
+      "default_features": false,
+      "features": [],
+      "target": null,
+      "kind": "dev",
+      "downloads": 0
+    },
+    {
+      "id": 1727339,
+      "version_id": 289225,
+      "crate_id": "unicode-xid",
+      "req": "^0.2",
+      "optional": false,
+      "default_features": true,
+      "features": [],
+      "target": null,
+      "kind": "normal",
+      "downloads": 0
+    }
+  ]
+}
