@@ -16,7 +16,6 @@ impl PostgresConfiguration {
         PgPoolOptions::new().connect_lazy_with(self.server_connect_options())
     }
 
-    #[allow(dead_code)]
     pub fn database_pool(&self) -> Pool<Postgres> {
         PgPoolOptions::new().connect_lazy_with(self.database_connect_options())
     }
@@ -33,7 +32,6 @@ impl PostgresConfiguration {
             })
     }
 
-    #[allow(dead_code)]
     fn database_connect_options(&self) -> PgConnectOptions {
         self.server_connect_options().database(&self.database_name)
     }

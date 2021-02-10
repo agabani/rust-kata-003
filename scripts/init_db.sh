@@ -50,8 +50,11 @@ fi
 echo >&2 "postgres is up and running on port ${POSTGRES_PORT}!"
 echo >&2 "redis is up and running on port ${REDIS_PORT}!"
 
-#export DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}
-#sqlx database create
-#sqlx migrate run
-#
-#echo >&2 "Postgres has been migrated, ready to go!"
+
+echo >&2 "postgres service is initializing."
+
+export DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${POSTGRES_PORT}/${POSTGRES_DB}
+sqlx database create
+sqlx migrate run
+
+echo >&2 "postgres service is initialized!"

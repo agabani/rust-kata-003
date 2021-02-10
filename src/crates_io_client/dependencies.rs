@@ -1,5 +1,7 @@
 use crate::crates_io_client::CratesIoClient;
-use crate::domain::{CrateMetadata, CrateName, CrateRelationship, CrateVersion};
+use crate::domain::{
+    CrateDependency, CrateDependencyType, CrateMetadata, CrateName, CrateRequirement, CrateVersion,
+};
 use std::convert::TryFrom;
 
 #[derive(Debug, serde::Deserialize)]
@@ -37,7 +39,7 @@ impl CratesIoClient {
         &self,
         name: &CrateName,
         version: &CrateVersion,
-    ) -> Option<Vec<CrateMetadata>> {
+    ) -> Option<CrateMetadata> {
         let url = format!(
             "/api/v1/crates/{}/{}/dependencies",
             name.as_str(),
@@ -46,16 +48,19 @@ impl CratesIoClient {
 
         let response = self.get::<Response>(&url).await?;
 
-        let result = response
-            .dependencies
-            .iter()
-            .map(|d| CrateMetadata {
-                name: CrateName::parse(&d.crate_id).expect("Failed to parse name."),
-                version: CrateVersion::parse(&d.req).expect("Failed to parse version."),
-                relationship: CrateRelationship::try_from(d.kind.as_str())
-                    .expect("Failed to parse relationship."),
-            })
-            .collect();
+        let result = CrateMetadata {
+            name: name.clone(),
+            version: version.clone(),
+            dependencies: response
+                .dependencies
+                .iter()
+                .map(|dependency| CrateDependency {
+                    name: CrateName::parse(&dependency.crate_id).unwrap(),
+                    requirement: CrateRequirement::parse(&dependency.req).unwrap(),
+                    type_: CrateDependencyType::try_from(dependency.kind.as_str()).unwrap(),
+                })
+                .collect(),
+        };
 
         Some(result)
     }
@@ -97,13 +102,15 @@ mod tests {
             .unwrap();
 
         // Assert
-        assert_eq!(2, result.len());
-        assert_eq!(&"quote", &result[0].name.as_str());
-        assert_eq!(&"^1.0", &result[0].version.as_str());
-        assert_eq!(&"dev", &result[0].relationship.as_str());
-        assert_eq!(&"unicode-xid", &result[1].name.as_str());
-        assert_eq!(&"^0.2", &result[1].version.as_str());
-        assert_eq!(&"normal", &result[1].relationship.as_str());
+        assert_eq!("proc-macro2", result.name.as_str());
+        assert_eq!("1.0.24", result.version.as_str());
+        assert_eq!(2, result.dependencies.len());
+        assert_eq!(&"quote", &result.dependencies[0].name.as_str());
+        assert_eq!(&"^1.0", &result.dependencies[0].requirement.as_str());
+        assert_eq!(&"dev", &result.dependencies[0].type_.as_str());
+        assert_eq!(&"unicode-xid", &result.dependencies[1].name.as_str());
+        assert_eq!(&"^0.2", &result.dependencies[1].requirement.as_str());
+        assert_eq!(&"normal", &result.dependencies[1].type_.as_str());
     }
 
     #[actix_rt::test]

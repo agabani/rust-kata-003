@@ -1,0 +1,91 @@
+{
+  "db": "PostgreSQL",
+  "18435d44f61a5463a16600714219a7af64f21d9de8ba4b0ba42578f3bde85e62": {
+    "query": "\nSELECT cm.name         AS crate_metadata_name,\n       cm.version      AS crate_metadata_version,\n       cm.dependencies AS crate_metadata_dependencies,\n       cd.name         AS \"crate_dependency_name?\",\n       cd.requirement  AS \"crate_dependency_requirement?\",\n       cd.type         AS \"crate_dependency_type?\"\nFROM crate_metadata as cm\n         LEFT JOIN crate_dependency cd on cm.id = cd.crate_id\nWHERE cm.name = $1\n  AND cm.version = $2;\n",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "crate_metadata_name",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "crate_metadata_version",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "crate_metadata_dependencies",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "crate_dependency_name?",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "crate_dependency_requirement?",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "crate_dependency_type?",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "da83302c7f6f8d013b24510a333c82af9a0b319822be92974a6f904c46e04396": {
+    "query": "\nINSERT INTO crate_dependency (crate_id, name, requirement, type)\nVALUES ($1, $2, $3, $4)\nON CONFLICT (name, type, crate_id) DO UPDATE SET requirement = EXCLUDED.requirement;\n",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Varchar",
+          "Varchar",
+          "Varchar"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "f681c0d31dafecc313b1a9d06f85f9a418ce9e0ef84c533693e24a9e8f78a867": {
+    "query": "\nINSERT INTO crate_metadata (name, version, dependencies)\nVALUES ($1, $2, $3)\nON CONFLICT (name, version) DO UPDATE\n    SET dependencies = EXCLUDED.dependencies\nRETURNING id;\n",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int4"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  }
+}
