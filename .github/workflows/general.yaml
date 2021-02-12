@@ -26,8 +26,9 @@ jobs:
         env:
           SQLX_OFFLINE: true
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
+          name: Clippy
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   coverage:
     name: Code Coverage
@@ -85,8 +86,8 @@ jobs:
           toolchain: stable
       - uses: actions-rs/cargo@v1
         with:
-          command: fmt
           args: --all -- --check
+          command: fmt
 
   sqlx:
     name: SQLx
@@ -113,16 +114,16 @@ jobs:
           toolchain: stable
       - uses: actions-rs/cargo@v1
         with:
-          command: install
           args: sqlx-cli --no-default-features --features postgres
+          command: install
       - uses: actions-rs/cargo@v1
         with:
-          command: sqlx
           args: database setup
+          command: sqlx
       - uses: actions-rs/cargo@v1
         with:
-          command: sqlx
           args: prepare --check -- --lib
+          command: sqlx
 
   test:
     name: Test

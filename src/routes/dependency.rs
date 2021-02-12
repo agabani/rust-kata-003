@@ -52,7 +52,7 @@ pub struct RelatedNode {
     ),
 )]
 pub async fn dependency_query(
-    web::Query(query): web::Query<Query>,
+    query: web::Query<Query>,
     crates_io_client: web::Data<CratesIoClient>,
     postgres_client: web::Data<PostgresClient>,
 ) -> Result<HttpResponse, HttpResponse> {
@@ -98,5 +98,5 @@ pub async fn dependency_query(
         }],
     };
 
-    Ok(HttpResponse::Ok().json(json))
+    Ok(HttpResponse::Ok().json(&json))
 }
