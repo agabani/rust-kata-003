@@ -28,7 +28,7 @@ impl CratesIoClient {
 
     #[tracing::instrument(skip(self))]
     async fn get<T: for<'de> serde::Deserialize<'de>>(&self, path: &str) -> Option<T> {
-        tracing::info!("making api call");
+        tracing::info!("fetching data");
         let url = format!("{}{}", self.base_address, path);
 
         let response = self

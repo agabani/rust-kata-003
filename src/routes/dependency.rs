@@ -1,5 +1,6 @@
 use crate::crates_io_client::CratesIoClient;
 use crate::domain::{CrateName, CrateVersion};
+use crate::postgres_client::PostgresClient;
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -39,12 +40,12 @@ pub struct Edge {
 pub struct RelatedNode {
     #[serde(rename = "name")]
     pub name: String,
-    #[serde(rename = "version")]
-    pub version: String,
+    #[serde(rename = "requirement")]
+    pub requirement: String,
 }
 
 #[tracing::instrument(
-    skip(client, query),
+    skip(crates_io_client, postgres_client, query),
     fields(
         crate_name = %query.crate_name,
         crate_version = %query.crate_version,
@@ -52,28 +53,45 @@ pub struct RelatedNode {
 )]
 pub async fn dependency_query(
     web::Query(query): web::Query<Query>,
-    client: web::Data<CratesIoClient>,
+    crates_io_client: web::Data<CratesIoClient>,
+    postgres_client: web::Data<PostgresClient>,
 ) -> Result<HttpResponse, HttpResponse> {
     let name = CrateName::parse(&query.crate_name)?;
     let version = CrateVersion::parse(&query.crate_version)?;
 
-    let metadata = client
-        .get_ref()
-        .dependencies(&name, &version)
+    let metadata = if let Some(metadata) = postgres_client
+        .get_crate_metadata(&name, &version)
         .await
-        .ok_or_else(|| HttpResponse::NotFound().finish())?;
+        .unwrap()
+    {
+        metadata
+    } else {
+        let metadata = crates_io_client
+            .get_ref()
+            .dependencies(&name, &version)
+            .await
+            .ok_or_else(|| HttpResponse::NotFound().finish())?;
+
+        postgres_client
+            .save_crate_metadata(&metadata)
+            .await
+            .unwrap();
+
+        metadata
+    };
 
     let json = Response {
         data: vec![Node {
-            name: name.as_str().to_owned(),
-            version: version.as_str().to_owned(),
+            name: metadata.name.as_str().to_owned(),
+            version: metadata.version.as_str().to_owned(),
             edges: metadata
+                .dependencies
                 .iter()
-                .map(|meta| Edge {
-                    relationship: meta.relationship.as_str().to_owned(),
+                .map(|dependency| Edge {
+                    relationship: format!("dependency.{}", dependency.type_.as_str()),
                     node: RelatedNode {
-                        name: meta.name.as_str().to_owned(),
-                        version: meta.version.as_str().to_owned(),
+                        name: dependency.name.as_str().to_owned(),
+                        requirement: dependency.requirement.as_str().to_owned(),
                     },
                 })
                 .collect(),

@@ -1,7 +1,7 @@
-#[derive(Clone, Debug, PartialEq)]
-pub struct CrateName(String);
+#[derive(Debug, PartialEq)]
+pub struct CrateRequirement(String);
 
-impl CrateName {
+impl CrateRequirement {
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -19,13 +19,13 @@ mod tests {
     #[test]
     fn as_str() {
         let value = Faker.fake::<String>();
-        let result = CrateName::parse(&value).unwrap();
+        let result = CrateRequirement::parse(&value).unwrap();
         assert_eq!(value, result.as_str());
     }
 
     #[test]
     fn parse() {
-        let result = CrateName::parse(&Faker.fake::<String>());
+        let result = CrateRequirement::parse(&Faker.fake::<String>());
         assert!(result.is_ok());
     }
 }

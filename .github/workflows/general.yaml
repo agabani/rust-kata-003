@@ -12,57 +12,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      redis:
-        image: redis
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          override: true
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          components: rustfmt
-          override: true
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
@@ -74,6 +23,8 @@ jobs:
           override: true
           toolchain: stable
       - uses: actions-rs/clippy-check@v1
+        env:
+          SQLX_OFFLINE: true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
@@ -110,6 +61,8 @@ jobs:
           override: true
           toolchain: stable
       - uses: actions-rs/tarpaulin@v0.1
+        env:
+          SQLX_OFFLINE: true
         with:
           args: '--ignore-tests'
       - uses: codecov/codecov-action@v1.0.2
@@ -119,3 +72,92 @@ jobs:
         with:
           name: code-coverage-report
           path: cobertura.xml
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          components: rustfmt
+          override: true
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  sqlx:
+    name: SQLx
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          override: true
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: sqlx-cli --no-default-features --features postgres
+      - uses: actions-rs/cargo@v1
+        with:
+          command: sqlx
+          args: database setup
+      - uses: actions-rs/cargo@v1
+        with:
+          command: sqlx
+          args: prepare --check -- --lib
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          override: true
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        env:
+          SQLX_OFFLINE: true
+        with:
+          command: test
