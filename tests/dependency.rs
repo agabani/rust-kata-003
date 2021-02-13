@@ -11,12 +11,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 async fn dependency_query_returns_200() {
     // Arrange
     let mock_server = MockServer::start().await;
-    Mock::given(method("GET"))
-        .and(path("/api/v1/crates/proc-macro2/1.0.24/dependencies"))
-        .respond_with(ResponseTemplate::new(200).set_body_bytes(fixture("proc-macro2-1.0.24.json")))
-        .expect(1)
-        .mount(&mock_server)
-        .await;
+    mount_fixture(&mock_server, "libc", "0.2.86").await;
+    mount_fixture(&mock_server, "rustc-std-workspace-core", "1.0.0").await;
 
     let app = spawn_app(&[("crates_io.base_address", mock_server.uri().as_str())]).await;
     let client = reqwest::Client::new();
@@ -24,7 +20,7 @@ async fn dependency_query_returns_200() {
     // Act
     let response = client
         .get(&format!("{}/dependency", app.address))
-        .query(&[("name", "proc-macro2"), ("version", "1.0.24")])
+        .query(&[("name", "libc"), ("version", "0.2.86")])
         .send()
         .await
         .unwrap();
@@ -94,4 +90,19 @@ async fn dependency_query_returns_404_when_crate_data_does_not_exist() {
 
     // Assert
     assert_eq!(404, response.status().as_u16());
+}
+
+async fn mount_fixture(mock_server: &MockServer, crate_name: &str, crate_version: &str) {
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/api/v1/crates/{}/{}/dependencies",
+            crate_name, crate_version
+        )))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_bytes(fixture(&format!("{}-{}.json", crate_name, crate_version))),
+        )
+        .expect(1)
+        .mount(&mock_server)
+        .await;
 }

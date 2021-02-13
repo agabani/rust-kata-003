@@ -1,0 +1,16 @@
+{
+  "dependencies": [
+    {
+      "id": 2097592,
+      "version_id": 337066,
+      "crate_id": "rustc-std-workspace-core",
+      "req": "^1.0.0",
+      "optional": true,
+      "default_features": true,
+      "features": [],
+      "target": null,
+      "kind": "normal",
+      "downloads": 0
+    }
+  ]
+}
