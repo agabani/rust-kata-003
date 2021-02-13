@@ -16,24 +16,22 @@ impl<'a, R: Registry, D: Database> Query<'a, R, D> {
         &self,
         name: &CrateName,
         version: &CrateVersion,
-    ) -> Option<CrateMetadata> {
+    ) -> Option<Vec<CrateMetadata>> {
         let result = self.database.resolve_dependencies(name, version).await;
 
-        if result.is_some() {
-            return result;
+        if let Some(result) = result {
+            return Some(vec![result]);
         }
 
         let result = self.registry.resolve_dependencies(name, version).await;
 
-        if result.is_none() {
-            return result;
+        if let Some(result) = result {
+            self.database.persist_dependencies(&result).await;
+
+            return Some(vec![result]);
+        } else {
+            None
         }
-
-        self.database
-            .persist_dependencies(result.as_ref().unwrap())
-            .await;
-
-        result
     }
 }
 

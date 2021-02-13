@@ -61,27 +61,30 @@ pub async fn dependency_query(
 
     let query = crate::query::Query::new(crates_io_client.get_ref(), postgres_client.get_ref());
 
-    let metadata = query
+    let results = query
         .dependency_graph(&name, &version)
         .await
         .ok_or_else(|| HttpResponse::NotFound().finish())?;
 
     let json = Response {
-        data: vec![Node {
-            name: metadata.name.as_str().to_owned(),
-            version: metadata.version.as_str().to_owned(),
-            edges: metadata
-                .dependencies
-                .iter()
-                .map(|dependency| Edge {
-                    relationship: format!("dependency.{}", dependency.type_.as_str()),
-                    node: RelatedNode {
-                        name: dependency.name.as_str().to_owned(),
-                        requirement: dependency.requirement.as_str().to_owned(),
-                    },
-                })
-                .collect(),
-        }],
+        data: results
+            .iter()
+            .map(|metadata| Node {
+                name: metadata.name.as_str().to_owned(),
+                version: metadata.version.as_str().to_owned(),
+                edges: metadata
+                    .dependencies
+                    .iter()
+                    .map(|dependency| Edge {
+                        relationship: format!("dependency.{}", dependency.type_.as_str()),
+                        node: RelatedNode {
+                            name: dependency.name.as_str().to_owned(),
+                            requirement: dependency.requirement.as_str().to_owned(),
+                        },
+                    })
+                    .collect(),
+            })
+            .collect(),
     };
 
     Ok(HttpResponse::Ok().json(&json))
