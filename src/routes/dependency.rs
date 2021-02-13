@@ -59,26 +59,12 @@ pub async fn dependency_query(
     let name = CrateName::parse(&query.crate_name)?;
     let version = CrateVersion::parse(&query.crate_version)?;
 
-    let metadata = if let Some(metadata) = postgres_client
-        .get_crate_metadata(&name, &version)
+    let query = crate::query::Query::new(crates_io_client.get_ref(), postgres_client.get_ref());
+
+    let metadata = query
+        .dependency_graph(&name, &version)
         .await
-        .unwrap()
-    {
-        metadata
-    } else {
-        let metadata = crates_io_client
-            .get_ref()
-            .dependencies(&name, &version)
-            .await
-            .ok_or_else(|| HttpResponse::NotFound().finish())?;
-
-        postgres_client
-            .save_crate_metadata(&metadata)
-            .await
-            .unwrap();
-
-        metadata
-    };
+        .ok_or_else(|| HttpResponse::NotFound().finish())?;
 
     let json = Response {
         data: vec![Node {
