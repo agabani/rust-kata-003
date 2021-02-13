@@ -1,3 +1,5 @@
+use crate::domain::CrateVersion;
+
 #[derive(Debug, PartialEq)]
 pub struct CrateRequirement(String);
 
@@ -8,6 +10,19 @@ impl CrateRequirement {
 
     pub fn parse(value: &str) -> Result<Self, String> {
         Ok(Self(value.to_owned()))
+    }
+
+    pub fn minimum_version(&self) -> CrateVersion {
+        let range_set =
+            semver_parser::RangeSet::parse(&self.0, semver_parser::Compat::Cargo).unwrap();
+
+        let comparator = &range_set.ranges[0].comparator_set[0];
+
+        CrateVersion::parse(&format!(
+            "{}.{}.{}",
+            comparator.major, comparator.minor, comparator.patch
+        ))
+        .unwrap()
     }
 }
 
@@ -27,5 +42,12 @@ mod tests {
     fn parse() {
         let result = CrateRequirement::parse(&Faker.fake::<String>());
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn minimum_version() {
+        let requirement = CrateRequirement::parse("^2.2.2").unwrap();
+        let version = requirement.minimum_version();
+        assert_eq!("2.2.2", version.as_str())
     }
 }

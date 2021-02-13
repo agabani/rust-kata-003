@@ -40,6 +40,8 @@ pub struct Edge {
 pub struct RelatedNode {
     #[serde(rename = "name")]
     pub name: String,
+    #[serde(rename = "minimumVersion")]
+    pub minimum_version: String,
     #[serde(rename = "requirement")]
     pub requirement: String,
 }
@@ -79,6 +81,11 @@ pub async fn dependency_query(
                         relationship: format!("dependency.{}", dependency.type_.as_str()),
                         node: RelatedNode {
                             name: dependency.name.as_str().to_owned(),
+                            minimum_version: dependency
+                                .requirement
+                                .minimum_version()
+                                .as_str()
+                                .to_owned(),
                             requirement: dependency.requirement.as_str().to_owned(),
                         },
                     })
