@@ -1,6 +1,7 @@
 use crate::crates_io_client::CratesIoClient;
 use crate::domain::{CrateName, CrateVersion};
 use crate::postgres_client::PostgresClient;
+use crate::resolver::{DependencyResolver, MinimumDependencyResolver};
 use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
@@ -60,6 +61,11 @@ pub async fn dependency_query(
 ) -> Result<HttpResponse, HttpResponse> {
     let name = CrateName::parse(&query.crate_name)?;
     let version = CrateVersion::parse(&query.crate_version)?;
+
+    let resolver = MinimumDependencyResolver::new()
+        .resolve(&name, &version)
+        .execute(&crates_io_client, &postgres_client)
+        .await;
 
     let query = crate::query::Query::new(crates_io_client.get_ref(), postgres_client.get_ref());
 
