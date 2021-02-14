@@ -62,15 +62,9 @@ pub async fn dependency_query(
     let name = CrateName::parse(&query.crate_name)?;
     let version = CrateVersion::parse(&query.crate_version)?;
 
-    let resolver = MinimumDependencyResolver::new()
+    let results = MinimumDependencyResolver::new()
         .resolve(&name, &version)
-        .execute(&crates_io_client, &postgres_client)
-        .await;
-
-    let query = crate::query::Query::new(crates_io_client.get_ref(), postgres_client.get_ref());
-
-    let results = query
-        .dependency_graph(&name, &version)
+        .execute(crates_io_client.get_ref(), postgres_client.get_ref())
         .await
         .ok_or_else(|| HttpResponse::NotFound().finish())?;
 
